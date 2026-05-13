@@ -62,8 +62,8 @@
 ### 环境要求
 - Python 3.9+
 - Node.js 18+
-- PostgreSQL 13+（可选：Docker/生产推荐）
-- Redis 7+（可选：Docker/生产推荐）
+- PostgreSQL 13+
+- Redis 7+（可选）
 
 ### 后端启动
 
