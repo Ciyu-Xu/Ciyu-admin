@@ -41,6 +41,9 @@ const refreshRequest = axios.create({
 
 request.interceptors.response.use(
   (response) => {
+    if (response.config.responseType === 'blob') {
+      return response.data
+    }
     const { code, message, data } = response.data
     if (code !== 200) {
       return Promise.reject(new Error(message || '操作失败'))
