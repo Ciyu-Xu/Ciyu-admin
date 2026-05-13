@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.db.session import get_db
 from app.models.system_config import SystemConfig
 from app.schemas.system_config import ResponseModel
+from app.core.cache import cached
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ _public_config_keys = [
 
 
 @router.get("/public", response_model=ResponseModel)
+@cached(ttl=60)
 async def get_public_config(
     db: AsyncSession = Depends(get_db)
 ):

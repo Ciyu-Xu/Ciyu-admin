@@ -6,7 +6,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload, joinedload
 
 from app.db.session import get_db
-from app.core.security import get_token_payload, token_blacklist
+from app.core.security import get_token_payload, is_token_blacklisted
 from app.models.user import User, Role, Menu, user_role_table, role_menu_table
 from app.models.session import UserSession
 
@@ -18,7 +18,7 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db)
 ) -> User:
     """获取当前用户"""
-    if token in token_blacklist:
+    if await is_token_blacklisted(token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="令牌已失效，请重新登录",

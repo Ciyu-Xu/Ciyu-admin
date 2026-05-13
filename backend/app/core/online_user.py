@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, and_
 
 from app.models.session import UserSession
-from app.core.security import token_blacklist
+from app.core.security import add_token_blacklist
 
 
 class OnlineUserService:
@@ -33,7 +33,7 @@ class OnlineUserService:
             existing_sessions = result.scalars().all()
             for old_session in existing_sessions:
                 old_session.is_online = False
-                token_blacklist.add(old_session.token)
+                await add_token_blacklist(old_session.token)
         
         result = await db.execute(
             select(UserSession).where(UserSession.token == token)
@@ -125,7 +125,7 @@ class OnlineUserService:
             session = result.scalar_one_or_none()
             if session:
                 session.is_online = False
-                token_blacklist.add(token)
+                await add_token_blacklist(token)
                 await db.commit()
                 return True
         elif session_id:
@@ -135,7 +135,7 @@ class OnlineUserService:
             session = result.scalar_one_or_none()
             if session:
                 session.is_online = False
-                token_blacklist.add(session.token)
+                await add_token_blacklist(session.token)
                 await db.commit()
                 return True
         elif user_id:
@@ -145,7 +145,7 @@ class OnlineUserService:
             sessions = result.scalars().all()
             for session in sessions:
                 session.is_online = False
-                token_blacklist.add(session.token)
+                await add_token_blacklist(session.token)
             await db.commit()
             return True
         return False
@@ -168,7 +168,7 @@ class OnlineUserService:
         count = 0
         for session in sessions:
             session.is_online = False
-            token_blacklist.add(session.token)
+            await add_token_blacklist(session.token)
             count += 1
         await db.commit()
         return count
@@ -215,7 +215,7 @@ class OnlineUserService:
         session = result.scalar_one_or_none()
         if session:
             session.is_online = False
-            token_blacklist.add(token)
+            await add_token_blacklist(token)
             await db.commit()
 
 

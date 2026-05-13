@@ -10,7 +10,7 @@ from app.models.user import User
 from app.schemas.user import ResponseModel
 from app.api.v1.deps import get_current_user
 from app.core.online_user import online_user_service
-from app.core.security import token_blacklist
+from app.core.security import add_token_blacklist
 from app.schemas.user import ResponseModel
 
 router = APIRouter()

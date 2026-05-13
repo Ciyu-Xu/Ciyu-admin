@@ -10,6 +10,7 @@ from app.models.log import OperationLog
 from app.models.notice import Notice
 from app.schemas.user import ResponseModel
 from app.api.v1.deps import get_current_user
+from app.core.cache import cache_key, get_cache, set_cache, delete_cache_by_key
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -21,40 +22,37 @@ async def get_dashboard_stats(
     current_user: User = Depends(get_current_user)
 ):
     """获取仪表盘统计数据"""
+    import json
+    key = cache_key("dashboard:stats")
+    cached = await get_cache(key)
+    if cached:
+        return json.loads(cached)
+
     logger.info(f"[Dashboard] 当前用户: {current_user.username}")
-    
+
     today = datetime.now()
     first_day_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     first_day_of_last_month = (first_day_of_month - timedelta(days=1)).replace(day=1)
-    
-    logger.info(f"[Dashboard] 查询总用户数...")
+
     total_users_result = await db.execute(select(func.count()).select_from(User))
     total_users = total_users_result.scalar() or 0
-    logger.info(f"[Dashboard] 总用户数: {total_users}")
-    
+
     total_users_last_month_result = await db.execute(
         select(func.count()).select_from(User).where(User.created_at < first_day_of_month)
     )
     total_users_last_month = total_users_last_month_result.scalar() or 0
-    logger.info(f"[Dashboard] 上月末用户数: {total_users_last_month}")
-    
-    logger.info(f"[Dashboard] 查询角色数...")
+
     total_roles_result = await db.execute(select(func.count()).select_from(Role))
     total_roles = total_roles_result.scalar() or 0
-    logger.info(f"[Dashboard] 角色数: {total_roles}")
-    
-    logger.info(f"[Dashboard] 查询部门数...")
+
     total_depts_result = await db.execute(select(func.count()).select_from(Dept))
     total_depts = total_depts_result.scalar() or 0
-    logger.info(f"[Dashboard] 部门数: {total_depts}")
-    
-    logger.info(f"[Dashboard] 查询启用用户数...")
+
     online_users_result = await db.execute(
         select(func.count()).select_from(User).where(User.status == 1)
     )
     online_users = online_users_result.scalar() or 0
-    logger.info(f"[Dashboard] 启用用户数: {online_users}")
-    
+
     result = {
         "code": 200,
         "message": "操作成功",
@@ -66,7 +64,8 @@ async def get_dashboard_stats(
             "totalDepts": total_depts,
         }
     }
-    logger.info(f"[Dashboard] 返回结果: {result}")
+
+    await set_cache(key, json.dumps(result, default=str), ttl=60)
     return result
 
 

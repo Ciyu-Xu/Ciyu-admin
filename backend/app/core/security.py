@@ -9,8 +9,31 @@ from app.core.config import settings
 # 密码加密上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Token黑名单，用于强制下线
-token_blacklist = set()
+# Token黑名单，用于强制下线（优先 Redis 回退内存）
+_token_blacklist: set = set()
+
+
+async def is_token_blacklisted(token: str) -> bool:
+    from app.core.redis_client import get_redis
+    r = get_redis()
+    if r:
+        return await r.sismember("token:blacklist", token)
+    return token in _token_blacklist
+
+
+async def add_token_blacklist(token: str):
+    from app.core.redis_client import get_redis
+    from app.core.config import settings
+    ttl = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    r = get_redis()
+    if r:
+        await r.sadd("token:blacklist", token)
+        await r.expire("token:blacklist", ttl)
+    else:
+        _token_blacklist.add(token)
+
+
+token_blacklist: set = _token_blacklist
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

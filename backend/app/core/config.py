@@ -5,7 +5,7 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     # 应用配置
-    APP_NAME: str = "Admin System"
+    APP_NAME: str = "Ciyu Admin"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
     

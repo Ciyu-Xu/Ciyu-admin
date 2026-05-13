@@ -46,10 +46,25 @@ async def lifespan(app: FastAPI):
     async with db_session() as session:
         await task_scheduler.reload_all_jobs(session)
     
+    # 初始化Redis连接
+    from app.core.redis_client import init_redis
+    try:
+        await init_redis()
+        print("✅ Redis 已连接")
+    except Exception as e:
+        print(f"⚠️ Redis 连接失败（不影响运行）: {e}")
+    
     yield
     
     # 关闭任务调度器
     task_scheduler.stop()
+    
+    # 关闭Redis连接
+    from app.core.redis_client import close_redis
+    try:
+        await close_redis()
+    except Exception:
+        pass
     
     # 关闭时执行
     await engine.dispose()
