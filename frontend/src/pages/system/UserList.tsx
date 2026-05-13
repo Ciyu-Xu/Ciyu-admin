@@ -8,11 +8,12 @@ import {
   RefreshCw,
   Download,
   Upload,
+  FileText,
   X,
   ChevronDown
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getUserList, createUser, updateUser, deleteUser, batchDeleteUsers, type UserItem } from '@/api/system/user'
+import { getUserList, createUser, updateUser, deleteUser, batchDeleteUsers, exportUserTemplate, exportUsers, importUsers, type UserItem } from '@/api/system/user'
 import { getRoleList } from '@/api/system/role'
 import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator'
 import { useToast } from '@/hooks/useToast'
@@ -173,12 +174,65 @@ const UserList = () => {
     }
   }
 
-  const handleImport = () => {
-    toast.info('导入功能开发中...')
+  const handleExportTemplate = async () => {
+    try {
+      const res = await exportUserTemplate()
+      const blob = res as unknown as Blob
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'user_import_template.xlsx'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('模板已下载')
+    } catch {
+      toast.error('下载模板失败')
+    }
   }
 
-  const handleExport = () => {
-    toast.info('导出功能开发中...')
+  const handleExport = async () => {
+    try {
+      const res = await exportUsers()
+      const blob = res as unknown as Blob
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'users.xlsx'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('导出成功')
+    } catch {
+      toast.error('导出失败')
+    }
+  }
+
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
+
+  const handleImport = async () => {
+    if (!importFile) {
+      toast.warning('请先选择文件')
+      return
+    }
+    setImporting(true)
+    try {
+      const res = await importUsers(importFile) as any
+      const msg = res?.message || '导入成功'
+      toast.success(msg)
+      if (res?.data?.errors?.length > 0) {
+        toast.warning(`部分行导入失败: ${res.data.errors.join('; ')}`)
+      }
+      setImportFile(null)
+      refetch()
+    } catch (err: any) {
+      toast.error('导入失败', err?.response?.data?.detail || err.message)
+    } finally {
+      setImporting(false)
+    }
   }
 
   const handleRefresh = () => {
@@ -355,12 +409,34 @@ const UserList = () => {
           )}
         </div>
         <div className="flex space-x-3">
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            id="importFileInput"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                setImportFile(file)
+                handleImport()
+              }
+              e.target.value = ''
+            }}
+          />
           <button 
-            onClick={handleImport}
-            className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            onClick={() => document.getElementById('importFileInput')?.click()}
+            disabled={importing}
+            className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             <Upload className="w-4 h-4 mr-2" />
-            导入
+            {importing ? '导入中...' : '导入'}
+          </button>
+          <button 
+            onClick={handleExportTemplate}
+            className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            模板
           </button>
           <button 
             onClick={handleExport}

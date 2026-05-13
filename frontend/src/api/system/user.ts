@@ -62,3 +62,19 @@ export const resetUserPassword = (id: number) => {
 export const changeUserStatus = (id: number, status: number) => {
   return request.put<ApiResponse<void>>(`/system/user/${id}/status`, { status })
 }
+
+export const exportUserTemplate = () => {
+  return request.get('/system/user/export/template', { responseType: 'blob' })
+}
+
+export const exportUsers = () => {
+  return request.get('/system/user/export', { responseType: 'blob' })
+}
+
+export const importUsers = (file: File) => {
+  const form = new FormData()
+  form.append('file', file)
+  return request.post('/system/user/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
