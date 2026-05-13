@@ -176,7 +176,7 @@ async def get_notice(
     notice = result.scalar_one_or_none()
     
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存�?)
+        raise HTTPException(status_code=404, detail="公告不存在")
     
     return {
         "code": 200,
@@ -255,7 +255,7 @@ async def update_notice(
     notice = result.scalar_one_or_none()
     
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存�?)
+        raise HTTPException(status_code=404, detail="公告不存在")
     
     if notice_in.notice_title is not None:
         notice.title = notice_in.notice_title
@@ -295,7 +295,7 @@ async def delete_notice(
     notice = result.scalar_one_or_none()
     
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存�?)
+        raise HTTPException(status_code=404, detail="公告不存在")
     
     await db.delete(notice)
     await db.commit()
@@ -319,14 +319,14 @@ async def change_notice_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(check_permissions("system:notice:edit"))
 ):
-    """修改公告状�?""
+    """修改公告状态"""
     start = time.time()
 
     result = await db.execute(select(Notice).where(Notice.id == notice_id))
     notice = result.scalar_one_or_none()
     
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存�?)
+        raise HTTPException(status_code=404, detail="公告不存在")
     
     notice.status = status
     await db.commit()
@@ -339,7 +339,7 @@ async def change_notice_status(
         status=1, duration=duration,
     )
     
-    return {"code": 200, "message": "状态修改成�?}
+    return {"code": 200, "message": "状态修改成功"}
 
 
 @router.post("/notice/{notice_id}/read", response_model=ResponseModel)
@@ -348,11 +348,11 @@ async def mark_notice_read(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """标记公告为已�?""
+    """标记公告为已读"""
     result = await db.execute(select(Notice).where(Notice.id == notice_id))
     notice = result.scalar_one_or_none()
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存�?)
+        raise HTTPException(status_code=404, detail="公告不存在")
     
     existing = await db.execute(
         select(NoticeRead).where(
@@ -386,7 +386,7 @@ async def get_notice_read_records(
     result = await db.execute(select(Notice).where(Notice.id == notice_id))
     notice = result.scalar_one_or_none()
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存�?)
+        raise HTTPException(status_code=404, detail="公告不存在")
     
     count_result = await db.execute(
         select(func.count()).select_from(NoticeRead).where(NoticeRead.notice_id == notice_id)

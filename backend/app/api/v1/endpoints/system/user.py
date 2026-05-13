@@ -99,7 +99,7 @@ async def get_user(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存�?)
+        raise HTTPException(status_code=404, detail="用户不存在")
     
     return {
         "code": 200,
@@ -124,7 +124,7 @@ async def get_simple_users(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """获取简化的用户列表（用于消息发送等场景�?""
+    """获取简化的用户列表（用于消息发送等场景）"""
     result = await db.execute(
         select(User).where(User.status == 1).order_by(User.id.desc())
     )
@@ -215,7 +215,7 @@ async def update_user(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存�?)
+        raise HTTPException(status_code=404, detail="用户不存在")
     
     if user_in.nickname is not None:
         user.nickname = user_in.nickname
@@ -269,7 +269,7 @@ async def delete_user(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存�?)
+        raise HTTPException(status_code=404, detail="用户不存在")
     
     await db.execute(user_role_table.delete().where(user_role_table.c.user_id == user_id))
     await db.execute(user_post_table.delete().where(user_post_table.c.user_id == user_id))
@@ -295,14 +295,14 @@ async def change_user_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(check_permissions("system:user:edit"))
 ):
-    """修改用户状�?""
+    """修改用户状态"""
     start = time.time()
     
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存�?)
+        raise HTTPException(status_code=404, detail="用户不存在")
     
     user.status = status
     await db.commit()
@@ -315,7 +315,7 @@ async def change_user_status(
         status=1, duration=duration,
     )
     
-    return {"code": 200, "message": "状态更新成�?}
+    return {"code": 200, "message": "状态更新成功"}
 
 
 @router.post("/user/{user_id}/reset-password", response_model=ResponseModel)
@@ -334,7 +334,7 @@ async def reset_user_password(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存�?)
+        raise HTTPException(status_code=404, detail="用户不存在")
     
     new_password = "123456"
     await password_policy_service.add_password_history(db, user_id, new_password)

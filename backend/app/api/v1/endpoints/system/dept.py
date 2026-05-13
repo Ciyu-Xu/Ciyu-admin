@@ -140,7 +140,7 @@ async def get_dept(
     dept = result.scalar_one_or_none()
     
     if not dept:
-        raise HTTPException(status_code=404, detail="部门不存�?)
+        raise HTTPException(status_code=404, detail="部门不存在")
     
     return {
         "code": 200,
@@ -207,7 +207,7 @@ async def update_dept(
     dept = result.scalar_one_or_none()
 
     if not dept:
-        raise HTTPException(status_code=404, detail="部门不存�?)
+        raise HTTPException(status_code=404, detail="部门不存在")
 
     if data.parent_id == dept_id:
         raise HTTPException(status_code=400, detail="不能将自己设为父部门")
@@ -250,11 +250,11 @@ async def delete_dept(
     dept = result.scalar_one_or_none()
     
     if not dept:
-        raise HTTPException(status_code=404, detail="部门不存�?)
+        raise HTTPException(status_code=404, detail="部门不存在")
     
     child_result = await db.execute(select(Dept).where(Dept.parent_id == dept_id))
     if child_result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="存在下级部门，无法删�?)
+        raise HTTPException(status_code=400, detail="存在下级部门，无法删除")
     
     user_result = await db.execute(select(User).where(User.dept_id == dept_id))
     if user_result.scalar_one_or_none():

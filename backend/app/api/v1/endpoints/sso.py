@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from app.db.session import get_db
-from app.utils.ip import get_client_ip
 from app.core.security import create_access_token
 from app.models.user import User, Role, user_role_table
 from app.services.sso import (
@@ -13,6 +13,7 @@ from app.services.sso import (
 from app.services.oper_log import OperLogService
 from app.api.v1.deps import get_current_user, check_permissions
 from app.schemas.user import ResponseModel
+from app.utils.ip import get_client_ip
 
 router = APIRouter()
 
@@ -21,7 +22,6 @@ router = APIRouter()
 async def get_sso_providers(
     db: AsyncSession = Depends(get_db),
 ):
-    """获取已启用的 SSO 提供商列�?""
     providers = []
     for name, provider in get_providers().items():
         p = await load_provider_config(db, name)
@@ -31,7 +31,7 @@ async def get_sso_providers(
                 "label": "GitHub" if p.name == "github" else "Gitee",
                 "icon": p.name,
             })
-    return {"code": 200, "message": "操作成功", "data": providers}
+    return {"code": 200, "message": "success", "data": providers}
 
 
 @router.get("/sso/login/{provider}")
@@ -40,10 +40,9 @@ async def sso_login(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    """发起 SSO 登录"""
     p = await load_provider_config(db, provider)
     if not p or not p.enabled:
-        raise HTTPException(status_code=400, detail="�?SSO 提供商未启用")
+        raise HTTPException(status_code=400, detail="SSO provider not enabled")
 
     state = generate_state()
     SSO_STATES[state] = provider
@@ -51,7 +50,7 @@ async def sso_login(
     redirect_uri = str(request.base_url).rstrip("/") + f"/api/v1/sso/callback/{provider}"
     authorize_url = p.get_authorize_url(redirect_uri, state)
 
-    return {"code": 200, "message": "操作成功", "data": {"authorize_url": authorize_url, "state": state}}
+    return {"code": 200, "message": "success", "data": {"authorize_url": authorize_url, "state": state}}
 
 
 @router.get("/sso/callback/{provider}")
@@ -62,27 +61,26 @@ async def sso_callback(
     request: Request = None,
     db: AsyncSession = Depends(get_db),
 ):
-    """SSO 回调处理"""
     p = await load_provider_config(db, provider)
     if not p:
-        raise HTTPException(status_code=400, detail="不支持的 SSO 提供�?)
+        raise HTTPException(status_code=400, detail="Unsupported SSO provider")
 
     expected_provider = SSO_STATES.pop(state, None)
     if expected_provider != provider:
-        raise HTTPException(status_code=400, detail="无效�?state 参数")
+        raise HTTPException(status_code=400, detail="Invalid state parameter")
 
     redirect_uri = str(request.base_url).rstrip("/") + f"/api/v1/sso/callback/{provider}"
     token_data = await p.exchange_code(code, redirect_uri)
     if not token_data:
-        raise HTTPException(status_code=400, detail="获取访问令牌失败")
+        raise HTTPException(status_code=400, detail="Failed to get access token")
 
     access_token = token_data.get("access_token")
     if not access_token:
-        raise HTTPException(status_code=400, detail="访问令牌不存�?)
+        raise HTTPException(status_code=400, detail="Access token not found")
 
     user_info = await p.get_userinfo(access_token)
     if not user_info:
-        raise HTTPException(status_code=400, detail="获取用户信息失败")
+        raise HTTPException(status_code=400, detail="Failed to get user info")
 
     if provider == "github":
         sso_id = str(user_info.get("id"))
@@ -97,7 +95,7 @@ async def sso_callback(
         avatar = user_info.get("avatar_url")
         nickname = user_info.get("name") or username
     else:
-        raise HTTPException(status_code=400, detail="不支持的 SSO 提供�?)
+        raise HTTPException(status_code=400, detail="Unsupported SSO provider")
 
     existing = await db.execute(
         select(User).where(
@@ -146,18 +144,17 @@ async def sso_callback(
     )
 
     frontend_url = "http://localhost:5173"
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head><title>登录成功</title></head>
-    <body>
-        <script>
-            localStorage.setItem('token', '{jwt_token}');
-            window.location.href = '{frontend_url}';
-        </script>
-    </body>
-    </html>
-    """
+    html = f"""<!DOCTYPE html>
+<html>
+<head><title>Login Success</title></head>
+<body>
+<script>
+    localStorage.setItem('token', '{jwt_token}');
+    window.location.href = '{frontend_url}';
+</script>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
 
 
 @router.get("/sso/configs", response_model=ResponseModel)
@@ -165,9 +162,8 @@ async def get_sso_configs_api(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(check_permissions("system:config:list")),
 ):
-    """获取 SSO 配置"""
     configs = await get_sso_configs(db)
-    return {"code": 200, "message": "操作成功", "data": configs}
+    return {"code": 200, "message": "success", "data": configs}
 
 
 @router.put("/sso/config/{config_id}", response_model=ResponseModel)
@@ -177,12 +173,11 @@ async def update_sso_config(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(check_permissions("system:config:edit")),
 ):
-    """更新 SSO 配置"""
     from app.models.system_config import SystemConfig
     result = await db.execute(select(SystemConfig).where(SystemConfig.id == config_id))
     config = result.scalar_one_or_none()
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存�?)
+        raise HTTPException(status_code=404, detail="Config not found")
     config.value = data.get("value", config.value)
     await db.commit()
-    return {"code": 200, "message": "保存成功"}
+    return {"code": 200, "message": "saved"}

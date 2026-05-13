@@ -94,7 +94,7 @@ async def get_menu(
     menu = result.scalar_one_or_none()
     
     if not menu:
-        raise HTTPException(status_code=404, detail="菜单不存�?)
+        raise HTTPException(status_code=404, detail="菜单不存在")
     
     return {
         "code": 200,
@@ -176,7 +176,7 @@ async def update_menu(
     menu = result.scalar_one_or_none()
     
     if not menu:
-        raise HTTPException(status_code=404, detail="菜单不存�?)
+        raise HTTPException(status_code=404, detail="菜单不存在")
     
     menu.menu_name = data.menu_name
     menu.path = data.path
@@ -223,12 +223,12 @@ async def delete_menu(
     menu = result.scalar_one_or_none()
     
     if not menu:
-        raise HTTPException(status_code=404, detail="菜单不存�?)
+        raise HTTPException(status_code=404, detail="菜单不存在")
     
     child_result = await db.execute(select(Menu).where(Menu.parent_id == menu_id))
     children = child_result.scalars().all()
     if children:
-        raise HTTPException(status_code=400, detail="请先删除子菜�?)
+        raise HTTPException(status_code=400, detail="请先删除子菜单")
     
     await db.delete(menu)
     await db.commit()

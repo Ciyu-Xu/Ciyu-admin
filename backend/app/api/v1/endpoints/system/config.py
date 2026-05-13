@@ -78,7 +78,7 @@ async def get_config(
     config = result.scalar_one_or_none()
 
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存�?)
+        raise HTTPException(status_code=404, detail="配置不存在")
 
     return {
         "code": 200,
@@ -107,7 +107,7 @@ async def create_config(
         select(SystemConfig).where(SystemConfig.key == config_key)
     )
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="配置键名已存�?)
+        raise HTTPException(status_code=400, detail="配置键名已存在")
 
     new_config = SystemConfig(
         key=config_key,
@@ -142,7 +142,7 @@ async def update_config(
     config = result.scalar_one_or_none()
 
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存�?)
+        raise HTTPException(status_code=404, detail="配置不存在")
 
     if "config_value" in config_data or "value" in config_data:
         config.value = config_data.get("config_value") or config_data.get("value")
@@ -175,7 +175,7 @@ async def delete_config(
     config = result.scalar_one_or_none()
 
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存�?)
+        raise HTTPException(status_code=404, detail="配置不存在")
 
     if config.is_public == 1:
         raise HTTPException(status_code=400, detail="系统内置配置不能删除")
@@ -205,7 +205,7 @@ async def get_config_by_key(
     config = result.scalar_one_or_none()
 
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存�?)
+        raise HTTPException(status_code=404, detail="配置不存在")
 
     return {
         "code": 200,

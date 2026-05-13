@@ -90,7 +90,7 @@ async def get_role(
     role = result.scalar_one_or_none()
     
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存�?)
+        raise HTTPException(status_code=404, detail="角色不存在")
     
     menu_result = await db.execute(
         select(Menu.id).join(role_menu_table, role_menu_table.c.menu_id == Menu.id).where(role_menu_table.c.role_id == role_id)
@@ -124,7 +124,7 @@ async def create_role(
     
     result = await db.execute(select(Role).where(Role.role_key == data.role_key))
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="角色标识已存�?)
+        raise HTTPException(status_code=400, detail="角色标识已存在")
     
     role = Role(
         name=data.name,
@@ -171,11 +171,11 @@ async def update_role(
     role = result.scalar_one_or_none()
     
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存�?)
+        raise HTTPException(status_code=404, detail="角色不存在")
     
     result = await db.execute(select(Role).where(Role.role_key == data.role_key, Role.id != role_id))
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="角色标识已存�?)
+        raise HTTPException(status_code=400, detail="角色标识已存在")
     
     role.name = data.name
     role.role_key = data.role_key
@@ -214,13 +214,13 @@ async def delete_role(
     start = time.time()
     
     if role_id == 1:
-        raise HTTPException(status_code=400, detail="不能删除超级管理员角�?)
+        raise HTTPException(status_code=400, detail="不能删除超级管理员角色")
     
     result = await db.execute(select(Role).where(Role.id == role_id))
     role = result.scalar_one_or_none()
     
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存�?)
+        raise HTTPException(status_code=404, detail="角色不存在")
     
     await db.execute(role_menu_table.delete().where(role_menu_table.c.role_id == role_id))
     await db.delete(role)
@@ -245,14 +245,14 @@ async def change_role_status(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(check_permissions("system:role:edit"))
 ):
-    """修改角色状�?""
+    """修改角色状态"""
     start = time.time()
     
     result = await db.execute(select(Role).where(Role.id == role_id))
     role = result.scalar_one_or_none()
     
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存�?)
+        raise HTTPException(status_code=404, detail="角色不存在")
     
     role.status = status
     await db.commit()
@@ -265,7 +265,7 @@ async def change_role_status(
         status=1, duration=duration,
     )
     
-    return {"code": 200, "message": "状态修改成�?}
+    return {"code": 200, "message": "状态修改成功"}
 
 
 @router.get("/role/all/menu", response_model=ResponseModel)
@@ -273,7 +273,7 @@ async def get_all_menus(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(check_permissions("system:role:list"))
 ):
-    """获取所有菜单（用于权限分配�?""
+    """获取所有菜单（用于权限分配）"""
     result = await db.execute(
         select(Menu).where(Menu.status == 1).order_by(Menu.sort_order.asc())
     )
