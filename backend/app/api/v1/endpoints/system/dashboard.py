@@ -87,16 +87,19 @@ async def get_recent_activities(
     logs = result.scalars().all()
     logger.info(f"[Dashboard] 获取到 {len(logs)} 条操作日志")
     
+    from app.api.v1.endpoints.system.log import _get_oper_type, _get_oper_desc
+
     rows = []
     for log in logs:
+        oper_type = _get_oper_type(log.method) if log.method else "其他"
         rows.append({
             "id": log.id,
-            "username": log.username,
-            "ip_address": log.ip_address,
-            "method": log.method,
-            "url": log.url,
-            "status": log.status,
-            "created_at": log.created_at.isoformat() if log.created_at else None,
+            "oper_name": log.username or "系统",
+            "oper_type": oper_type,
+            "oper_desc": _get_oper_desc(log.url) if log.url else "",
+            "ip_address": log.ip_address or "",
+            "status": log.status or 1,
+            "create_time": log.created_at.isoformat() if log.created_at else None,
         })
     
     return {
