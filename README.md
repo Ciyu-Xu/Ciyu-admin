@@ -1,4 +1,4 @@
-# Admin System - 现代管理后台系统
+# Ciyu Admin - 现代管理后台系统
 
 一个基于 Python + React 的高性能、现代化企业级管理后台系统，采用前后端完全分离架构。
 
@@ -7,8 +7,7 @@
 ### 后端
 - **FastAPI** - 异步高性能 Web 框架
 - **SQLAlchemy 2.0** - 现代化 ORM
-- **SQLite** - 默认开发数据库
-- **PostgreSQL** - 关系型数据库（生产/容器化推荐）
+- **PostgreSQL** - 关系型数据库
 - **Redis** - 缓存与会话存储（可选）
 - **JWT** - 无状态认证
 - **Pydantic** - 数据验证
