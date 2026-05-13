@@ -233,13 +233,22 @@ async def get_login_logs(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(check_permissions("monitor:loginlog:list"))
+    current_user: User = Depends(get_current_user)
 ):
-    """获取登录日志列表"""
+    """获取登录日志列表（用户只能看自己的，admin可看全部）"""
     conditions = []
-    
-    if username:
+
+    if username and username != current_user.username:
+        is_admin = any(role.role_key == "admin" for role in current_user.roles)
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="无权限查看其他用户的登录日志")
         conditions.append(LoginLog.username.ilike(f"%{username}%"))
+    else:
+        conditions.append(LoginLog.username == current_user.username)
+
+    if status is not None:
+        conditions.append(LoginLog.status == status)
+
     if status is not None:
         conditions.append(LoginLog.status == status)
     
