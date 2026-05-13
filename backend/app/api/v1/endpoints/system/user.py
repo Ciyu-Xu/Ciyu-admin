@@ -92,6 +92,109 @@ async def get_users(
     }
 
 
+@router.get("/user/export")
+async def export_users(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(check_permissions("system:user:list")),
+):
+    """导出用户数据"""
+    result = await db.execute(select(User).order_by(User.id))
+    users = result.scalars().all()
+
+    headers = ["用户名", "昵称", "邮箱", "手机号", "状态", "部门ID"]
+    rows = []
+    for u in users:
+        rows.append([
+            u.username, u.nickname or "", u.email or "", u.phone or "",
+            "启用" if u.status == 1 else "禁用", str(u.dept_id or ""),
+        ])
+
+    output = export_to_excel(headers, rows, "用户数据")
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=users.xlsx"},
+    )
+
+
+@router.get("/user/export/template")
+async def export_user_template():
+    """导出用户导入模板"""
+    columns = [
+        {"key": "username", "label": "用户名", "required": True, "note": "必填，3-50个字符"},
+        {"key": "nickname", "label": "昵称", "required": False, "note": "选填"},
+        {"key": "email", "label": "邮箱", "required": False, "note": "选填，需为有效邮箱格式"},
+        {"key": "phone", "label": "手机号", "required": False, "note": "选填，11位手机号"},
+        {"key": "password", "label": "密码", "required": True, "note": "必填，至少6位"},
+        {"key": "status", "label": "状态", "required": False, "note": "启用/禁用，默认启用"},
+    ]
+    output = create_template(columns)
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=user_import_template.xlsx"},
+    )
+
+
+@router.post("/user/import")
+async def import_users(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(check_permissions("system:user:add")),
+):
+    """导入用户"""
+    form = await request.form()
+    file = form.get("file")
+    if not file:
+        raise HTTPException(status_code=400, detail="请上传文件")
+
+    content = await file.read()
+    expected = ["用户名", "昵称", "邮箱", "手机号", "密码", "状态"]
+    records = parse_import_file(content, expected)
+
+    imported = 0
+    errors = []
+    for idx, record in enumerate(records, 2):
+        username = record.get("用户名", "").strip()
+        password = record.get("密码", "").strip()
+
+        if not username or len(username) < 3:
+            errors.append(f"第{idx}行: 用户名无效")
+            continue
+        if not password or len(password) < 6:
+            errors.append(f"第{idx}行: 密码至少6位")
+            continue
+
+        existing = await db.execute(select(User).where(User.username == username))
+        if existing.scalar_one_or_none():
+            errors.append(f"第{idx}行: 用户名 '{username}' 已存在")
+            continue
+
+        nickname = record.get("昵称", "") or username
+        email = record.get("邮箱", "")
+        phone = record.get("手机号", "")
+        status_text = record.get("状态", "启用")
+        status = 1 if status_text in ("启用", "1", "是") else 0
+
+        user = User(
+            username=username,
+            nickname=nickname,
+            email=email if email else None,
+            phone=phone if phone else None,
+            hashed_password=get_password_hash(password),
+            status=status,
+        )
+        db.add(user)
+        imported += 1
+
+    if imported > 0:
+        await db.commit()
+
+    return {
+        "code": 200,
+        "message": f"成功导入 {imported} 个用户",
+        "data": {"imported": imported, "errors": errors},
+    }
 @router.get("/user/{user_id}", response_model=ResponseModel)
 async def get_user(
     user_id: int,
@@ -357,106 +460,3 @@ async def reset_user_password(
     return {"code": 200, "message": f"密码已重置为 {new_password}"}
 
 
-@router.get("/user/export")
-async def export_users(
-    db: AsyncSession = Depends(get_db),
-    current_user = Depends(check_permissions("system:user:list")),
-):
-    """导出用户数据"""
-    result = await db.execute(select(User).order_by(User.id))
-    users = result.scalars().all()
-
-    headers = ["用户名", "昵称", "邮箱", "手机号", "状态", "部门ID"]
-    rows = []
-    for u in users:
-        rows.append([
-            u.username, u.nickname or "", u.email or "", u.phone or "",
-            "启用" if u.status == 1 else "禁用", str(u.dept_id or ""),
-        ])
-
-    output = export_to_excel(headers, rows, "用户数据")
-    return StreamingResponse(
-        output,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=users.xlsx"},
-    )
-
-
-@router.get("/user/export/template")
-async def export_user_template():
-    """导出用户导入模板"""
-    columns = [
-        {"key": "username", "label": "用户名", "required": True, "note": "必填，3-50个字符"},
-        {"key": "nickname", "label": "昵称", "required": False, "note": "选填"},
-        {"key": "email", "label": "邮箱", "required": False, "note": "选填，需为有效邮箱格式"},
-        {"key": "phone", "label": "手机号", "required": False, "note": "选填，11位手机号"},
-        {"key": "password", "label": "密码", "required": True, "note": "必填，至少6位"},
-        {"key": "status", "label": "状态", "required": False, "note": "启用/禁用，默认启用"},
-    ]
-    output = create_template(columns)
-    return StreamingResponse(
-        output,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=user_import_template.xlsx"},
-    )
-
-
-@router.post("/user/import")
-async def import_users(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user = Depends(check_permissions("system:user:add")),
-):
-    """导入用户"""
-    form = await request.form()
-    file = form.get("file")
-    if not file:
-        raise HTTPException(status_code=400, detail="请上传文件")
-
-    content = await file.read()
-    expected = ["用户名", "昵称", "邮箱", "手机号", "密码", "状态"]
-    records = parse_import_file(content, expected)
-
-    imported = 0
-    errors = []
-    for idx, record in enumerate(records, 2):
-        username = record.get("用户名", "").strip()
-        password = record.get("密码", "").strip()
-
-        if not username or len(username) < 3:
-            errors.append(f"第{idx}行: 用户名无效")
-            continue
-        if not password or len(password) < 6:
-            errors.append(f"第{idx}行: 密码至少6位")
-            continue
-
-        existing = await db.execute(select(User).where(User.username == username))
-        if existing.scalar_one_or_none():
-            errors.append(f"第{idx}行: 用户名 '{username}' 已存在")
-            continue
-
-        nickname = record.get("昵称", "") or username
-        email = record.get("邮箱", "")
-        phone = record.get("手机号", "")
-        status_text = record.get("状态", "启用")
-        status = 1 if status_text in ("启用", "1", "是") else 0
-
-        user = User(
-            username=username,
-            nickname=nickname,
-            email=email if email else None,
-            phone=phone if phone else None,
-            hashed_password=get_password_hash(password),
-            status=status,
-        )
-        db.add(user)
-        imported += 1
-
-    if imported > 0:
-        await db.commit()
-
-    return {
-        "code": 200,
-        "message": f"成功导入 {imported} 个用户",
-        "data": {"imported": imported, "errors": errors},
-    }
