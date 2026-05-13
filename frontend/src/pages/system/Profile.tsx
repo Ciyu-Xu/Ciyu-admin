@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Lock, History, Upload, Clock, LogIn, Monitor, Globe, Smartphone, CheckCircle2, AlertCircle, X, Eye, EyeOff } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -53,6 +53,18 @@ const Profile = () => {
 
   const loginLogs = loginLogsData?.rows || []
   const loginLogsTotal = loginLogsData?.total || 0
+
+  useEffect(() => {
+    if (actualUserInfo) {
+      setAvatar(actualUserInfo.avatar || '')
+      profileForm.reset({
+        nickname: actualUserInfo.nickname || '',
+        email: actualUserInfo.email || '',
+        phone: actualUserInfo.phone || '',
+        avatar: actualUserInfo.avatar || '',
+      })
+    }
+  }, [actualUserInfo])
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: ProfileForm) => updateProfile(data),
