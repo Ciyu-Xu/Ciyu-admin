@@ -16,10 +16,22 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            const clientIp = req.socket.remoteAddress || req.headers['x-forwarded-for'] || '127.0.0.1'
+            proxyReq.setHeader('X-Forwarded-For', clientIp as string)
+          })
+        },
       },
       '/uploads': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            const clientIp = req.socket.remoteAddress || req.headers['x-forwarded-for'] || '127.0.0.1'
+            proxyReq.setHeader('X-Forwarded-For', clientIp as string)
+          })
+        },
       },
     },
   },

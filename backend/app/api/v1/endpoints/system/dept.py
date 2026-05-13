@@ -6,6 +6,7 @@ from sqlalchemy import select, and_, func
 from pydantic import BaseModel, field_validator
 
 from app.db.session import get_db
+from app.utils.ip import get_client_ip
 from app.core.data_scope import get_dept_data_scope_filter
 from app.models.user import Dept, User
 from app.schemas.user import ResponseModel
@@ -139,7 +140,7 @@ async def get_dept(
     dept = result.scalar_one_or_none()
     
     if not dept:
-        raise HTTPException(status_code=404, detail="部门不存在")
+        raise HTTPException(status_code=404, detail="部门不存�?)
     
     return {
         "code": 200,
@@ -179,7 +180,7 @@ async def create_dept(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"dept_name": "{data.dept_name}"}}',
         status=1, duration=duration,
     )
@@ -206,7 +207,7 @@ async def update_dept(
     dept = result.scalar_one_or_none()
 
     if not dept:
-        raise HTTPException(status_code=404, detail="部门不存在")
+        raise HTTPException(status_code=404, detail="部门不存�?)
 
     if data.parent_id == dept_id:
         raise HTTPException(status_code=400, detail="不能将自己设为父部门")
@@ -224,7 +225,7 @@ async def update_dept(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"dept_id": {dept_id}}}',
         status=1, duration=duration,
     )
@@ -249,11 +250,11 @@ async def delete_dept(
     dept = result.scalar_one_or_none()
     
     if not dept:
-        raise HTTPException(status_code=404, detail="部门不存在")
+        raise HTTPException(status_code=404, detail="部门不存�?)
     
     child_result = await db.execute(select(Dept).where(Dept.parent_id == dept_id))
     if child_result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="存在下级部门，无法删除")
+        raise HTTPException(status_code=400, detail="存在下级部门，无法删�?)
     
     user_result = await db.execute(select(User).where(User.dept_id == dept_id))
     if user_result.scalar_one_or_none():
@@ -265,7 +266,7 @@ async def delete_dept(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"dept_id": {dept_id}}}',
         status=1, duration=duration,
     )

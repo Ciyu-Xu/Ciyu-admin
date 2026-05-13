@@ -10,7 +10,8 @@ from app.models.log import OperationLog
 from app.models.notice import Notice
 from app.schemas.user import ResponseModel
 from app.api.v1.deps import get_current_user
-from app.core.cache import cache_key, get_cache, set_cache, delete_cache_by_key
+from app.core.cache import cache_key
+from app.core.redis_client import get_cache, set_cache
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

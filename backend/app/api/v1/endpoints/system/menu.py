@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 
 from app.db.session import get_db
+from app.utils.ip import get_client_ip
 from app.models.user import Menu
 from app.schemas.user import ResponseModel
 from app.api.v1.deps import get_current_user, check_permissions
@@ -93,7 +94,7 @@ async def get_menu(
     menu = result.scalar_one_or_none()
     
     if not menu:
-        raise HTTPException(status_code=404, detail="菜单不存在")
+        raise HTTPException(status_code=404, detail="菜单不存�?)
     
     return {
         "code": 200,
@@ -151,7 +152,7 @@ async def create_menu(
         user=current_user,
         method=request.method,
         url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=str(data.model_dump()),
         status=1,
         duration=duration,
@@ -175,7 +176,7 @@ async def update_menu(
     menu = result.scalar_one_or_none()
     
     if not menu:
-        raise HTTPException(status_code=404, detail="菜单不存在")
+        raise HTTPException(status_code=404, detail="菜单不存�?)
     
     menu.menu_name = data.menu_name
     menu.path = data.path
@@ -199,7 +200,7 @@ async def update_menu(
         user=current_user,
         method=request.method,
         url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=str(data.model_dump()),
         status=1,
         duration=duration,
@@ -222,12 +223,12 @@ async def delete_menu(
     menu = result.scalar_one_or_none()
     
     if not menu:
-        raise HTTPException(status_code=404, detail="菜单不存在")
+        raise HTTPException(status_code=404, detail="菜单不存�?)
     
     child_result = await db.execute(select(Menu).where(Menu.parent_id == menu_id))
     children = child_result.scalars().all()
     if children:
-        raise HTTPException(status_code=400, detail="请先删除子菜单")
+        raise HTTPException(status_code=400, detail="请先删除子菜�?)
     
     await db.delete(menu)
     await db.commit()
@@ -239,7 +240,7 @@ async def delete_menu(
         user=current_user,
         method=request.method,
         url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"menu_id": {menu_id}}}',
         status=1,
         duration=duration,

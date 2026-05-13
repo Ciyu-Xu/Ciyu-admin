@@ -1,8 +1,10 @@
 import logging
 from typing import Optional
+from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.log import OperationLog
 from app.models.user import User
+from app.utils.ip import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,8 @@ class OperLogService:
         error_message: Optional[str] = None,
         duration: int = 0,
     ) -> OperationLog:
+        if ip_address is None:
+            ip_address = "127.0.0.1"
         log = OperationLog(
             user_id=user.id if user else None,
             username=user.username if user else "系统",

@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from app.db.session import get_db
+from app.utils.ip import get_client_ip
 from app.core.security import create_access_token
 from app.models.user import User, Role, user_role_table
 from app.services.sso import (
@@ -20,7 +21,7 @@ router = APIRouter()
 async def get_sso_providers(
     db: AsyncSession = Depends(get_db),
 ):
-    """获取已启用的 SSO 提供商列表"""
+    """获取已启用的 SSO 提供商列�?""
     providers = []
     for name, provider in get_providers().items():
         p = await load_provider_config(db, name)
@@ -42,7 +43,7 @@ async def sso_login(
     """发起 SSO 登录"""
     p = await load_provider_config(db, provider)
     if not p or not p.enabled:
-        raise HTTPException(status_code=400, detail="该 SSO 提供商未启用")
+        raise HTTPException(status_code=400, detail="�?SSO 提供商未启用")
 
     state = generate_state()
     SSO_STATES[state] = provider
@@ -64,11 +65,11 @@ async def sso_callback(
     """SSO 回调处理"""
     p = await load_provider_config(db, provider)
     if not p:
-        raise HTTPException(status_code=400, detail="不支持的 SSO 提供商")
+        raise HTTPException(status_code=400, detail="不支持的 SSO 提供�?)
 
     expected_provider = SSO_STATES.pop(state, None)
     if expected_provider != provider:
-        raise HTTPException(status_code=400, detail="无效的 state 参数")
+        raise HTTPException(status_code=400, detail="无效�?state 参数")
 
     redirect_uri = str(request.base_url).rstrip("/") + f"/api/v1/sso/callback/{provider}"
     token_data = await p.exchange_code(code, redirect_uri)
@@ -77,7 +78,7 @@ async def sso_callback(
 
     access_token = token_data.get("access_token")
     if not access_token:
-        raise HTTPException(status_code=400, detail="访问令牌不存在")
+        raise HTTPException(status_code=400, detail="访问令牌不存�?)
 
     user_info = await p.get_userinfo(access_token)
     if not user_info:
@@ -96,7 +97,7 @@ async def sso_callback(
         avatar = user_info.get("avatar_url")
         nickname = user_info.get("name") or username
     else:
-        raise HTTPException(status_code=400, detail="不支持的 SSO 提供商")
+        raise HTTPException(status_code=400, detail="不支持的 SSO 提供�?)
 
     existing = await db.execute(
         select(User).where(
@@ -137,7 +138,7 @@ async def sso_callback(
 
     jwt_token = create_access_token(data={"sub": str(user.id)})
 
-    client_ip = request.client.host if request.client else None
+    client_ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent") if request else None
     await OperLogService.create_log(
         db=db, user=user, method="SSO", url=f"/sso/callback/{provider}",
@@ -181,7 +182,7 @@ async def update_sso_config(
     result = await db.execute(select(SystemConfig).where(SystemConfig.id == config_id))
     config = result.scalar_one_or_none()
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存在")
+        raise HTTPException(status_code=404, detail="配置不存�?)
     config.value = data.get("value", config.value)
     await db.commit()
     return {"code": 200, "message": "保存成功"}

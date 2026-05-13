@@ -6,6 +6,7 @@ from sqlalchemy import select, and_, or_, func
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
+from app.utils.ip import get_client_ip
 from app.core.security import get_password_hash, verify_password
 from app.core.data_scope import get_user_data_scope_filter
 from app.core.config_loader import get_config_value
@@ -98,7 +99,7 @@ async def get_user(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=404, detail="用户不存�?)
     
     return {
         "code": 200,
@@ -123,7 +124,7 @@ async def get_simple_users(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """获取简化的用户列表（用于消息发送等场景）"""
+    """获取简化的用户列表（用于消息发送等场景�?""
     result = await db.execute(
         select(User).where(User.status == 1).order_by(User.id.desc())
     )
@@ -191,7 +192,7 @@ async def create_user(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"username": "{user_in.username}"}}',
         status=1, duration=duration,
     )
@@ -214,7 +215,7 @@ async def update_user(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=404, detail="用户不存�?)
     
     if user_in.nickname is not None:
         user.nickname = user_in.nickname
@@ -243,7 +244,7 @@ async def update_user(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"user_id": {user_id}}}',
         status=1, duration=duration,
     )
@@ -268,7 +269,7 @@ async def delete_user(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=404, detail="用户不存�?)
     
     await db.execute(user_role_table.delete().where(user_role_table.c.user_id == user_id))
     await db.execute(user_post_table.delete().where(user_post_table.c.user_id == user_id))
@@ -278,7 +279,7 @@ async def delete_user(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"user_id": {user_id}}}',
         status=1, duration=duration,
     )
@@ -294,14 +295,14 @@ async def change_user_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(check_permissions("system:user:edit"))
 ):
-    """修改用户状态"""
+    """修改用户状�?""
     start = time.time()
     
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=404, detail="用户不存�?)
     
     user.status = status
     await db.commit()
@@ -309,12 +310,12 @@ async def change_user_status(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"user_id": {user_id}, "status": {status}}}',
         status=1, duration=duration,
     )
     
-    return {"code": 200, "message": "状态更新成功"}
+    return {"code": 200, "message": "状态更新成�?}
 
 
 @router.post("/user/{user_id}/reset-password", response_model=ResponseModel)
@@ -333,7 +334,7 @@ async def reset_user_password(
     user = result.scalar_one_or_none()
     
     if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=404, detail="用户不存�?)
     
     new_password = "123456"
     await password_policy_service.add_password_history(db, user_id, new_password)
@@ -344,7 +345,7 @@ async def reset_user_password(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"user_id": {user_id}}}',
         status=1, duration=duration,
     )

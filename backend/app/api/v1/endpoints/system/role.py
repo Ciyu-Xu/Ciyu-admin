@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, delete as sa_delete
 
 from app.db.session import get_db
+from app.utils.ip import get_client_ip
 from app.models.user import Role, Menu, role_menu_table
 from app.schemas.user import ResponseModel
 from app.api.v1.deps import get_current_user, check_permissions
@@ -89,7 +90,7 @@ async def get_role(
     role = result.scalar_one_or_none()
     
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存在")
+        raise HTTPException(status_code=404, detail="角色不存�?)
     
     menu_result = await db.execute(
         select(Menu.id).join(role_menu_table, role_menu_table.c.menu_id == Menu.id).where(role_menu_table.c.role_id == role_id)
@@ -123,7 +124,7 @@ async def create_role(
     
     result = await db.execute(select(Role).where(Role.role_key == data.role_key))
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="角色标识已存在")
+        raise HTTPException(status_code=400, detail="角色标识已存�?)
     
     role = Role(
         name=data.name,
@@ -147,7 +148,7 @@ async def create_role(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"name": "{data.name}"}}',
         status=1, duration=duration,
     )
@@ -170,11 +171,11 @@ async def update_role(
     role = result.scalar_one_or_none()
     
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存在")
+        raise HTTPException(status_code=404, detail="角色不存�?)
     
     result = await db.execute(select(Role).where(Role.role_key == data.role_key, Role.id != role_id))
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="角色标识已存在")
+        raise HTTPException(status_code=400, detail="角色标识已存�?)
     
     role.name = data.name
     role.role_key = data.role_key
@@ -194,7 +195,7 @@ async def update_role(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"role_id": {role_id}, "name": "{data.name}"}}',
         status=1, duration=duration,
     )
@@ -213,13 +214,13 @@ async def delete_role(
     start = time.time()
     
     if role_id == 1:
-        raise HTTPException(status_code=400, detail="不能删除超级管理员角色")
+        raise HTTPException(status_code=400, detail="不能删除超级管理员角�?)
     
     result = await db.execute(select(Role).where(Role.id == role_id))
     role = result.scalar_one_or_none()
     
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存在")
+        raise HTTPException(status_code=404, detail="角色不存�?)
     
     await db.execute(role_menu_table.delete().where(role_menu_table.c.role_id == role_id))
     await db.delete(role)
@@ -228,7 +229,7 @@ async def delete_role(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"role_id": {role_id}}}',
         status=1, duration=duration,
     )
@@ -244,14 +245,14 @@ async def change_role_status(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(check_permissions("system:role:edit"))
 ):
-    """修改角色状态"""
+    """修改角色状�?""
     start = time.time()
     
     result = await db.execute(select(Role).where(Role.id == role_id))
     role = result.scalar_one_or_none()
     
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存在")
+        raise HTTPException(status_code=404, detail="角色不存�?)
     
     role.status = status
     await db.commit()
@@ -259,12 +260,12 @@ async def change_role_status(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"role_id": {role_id}, "status": {status}}}',
         status=1, duration=duration,
     )
     
-    return {"code": 200, "message": "状态修改成功"}
+    return {"code": 200, "message": "状态修改成�?}
 
 
 @router.get("/role/all/menu", response_model=ResponseModel)
@@ -272,7 +273,7 @@ async def get_all_menus(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(check_permissions("system:role:list"))
 ):
-    """获取所有菜单（用于权限分配）"""
+    """获取所有菜单（用于权限分配�?""
     result = await db.execute(
         select(Menu).where(Menu.status == 1).order_by(Menu.sort_order.asc())
     )

@@ -36,6 +36,7 @@ from app.api.v1.deps import (
     oauth2_scheme
 )
 from app.core.online_user import online_user_service
+from app.utils.ip import get_client_ip
 import uuid
 
 router = APIRouter()
@@ -48,7 +49,7 @@ async def login(
     db: AsyncSession = Depends(get_db)
 ):
     """用户登录"""
-    client_ip = request.client.host if request.client else "127.0.0.1"
+    client_ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent", "Unknown")
     
     is_blocked, status_info = rate_limiter.record_attempt(client_ip)

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, delete
 
 from app.db.session import get_db
+from app.utils.ip import get_client_ip
 from app.models.user import User
 from app.models.system_config import SystemConfig
 from app.api.v1.deps import get_current_user
@@ -77,7 +78,7 @@ async def get_config(
     config = result.scalar_one_or_none()
 
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存在")
+        raise HTTPException(status_code=404, detail="配置不存�?)
 
     return {
         "code": 200,
@@ -106,7 +107,7 @@ async def create_config(
         select(SystemConfig).where(SystemConfig.key == config_key)
     )
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="配置键名已存在")
+        raise HTTPException(status_code=400, detail="配置键名已存�?)
 
     new_config = SystemConfig(
         key=config_key,
@@ -120,7 +121,7 @@ async def create_config(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"config_key": "{config_key}", "config_name": "{config_name}"}}',
         status=1, duration=duration,
     )
@@ -141,7 +142,7 @@ async def update_config(
     config = result.scalar_one_or_none()
 
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存在")
+        raise HTTPException(status_code=404, detail="配置不存�?)
 
     if "config_value" in config_data or "value" in config_data:
         config.value = config_data.get("config_value") or config_data.get("value")
@@ -154,7 +155,7 @@ async def update_config(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"config_id": {config_id}}}',
         status=1, duration=duration,
     )
@@ -174,7 +175,7 @@ async def delete_config(
     config = result.scalar_one_or_none()
 
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存在")
+        raise HTTPException(status_code=404, detail="配置不存�?)
 
     if config.is_public == 1:
         raise HTTPException(status_code=400, detail="系统内置配置不能删除")
@@ -184,7 +185,7 @@ async def delete_config(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"config_id": {config_id}}}',
         status=1, duration=duration,
     )
@@ -204,7 +205,7 @@ async def get_config_by_key(
     config = result.scalar_one_or_none()
 
     if not config:
-        raise HTTPException(status_code=404, detail="配置不存在")
+        raise HTTPException(status_code=404, detail="配置不存�?)
 
     return {
         "code": 200,

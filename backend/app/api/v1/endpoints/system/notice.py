@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Any
 
 from app.db.session import get_db
+from app.utils.ip import get_client_ip
 from app.models.notice import Notice, NoticeRead
 from app.models.user import User
 from app.api.v1.deps import get_current_user, check_permissions
@@ -175,7 +176,7 @@ async def get_notice(
     notice = result.scalar_one_or_none()
     
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存在")
+        raise HTTPException(status_code=404, detail="公告不存�?)
     
     return {
         "code": 200,
@@ -231,7 +232,7 @@ async def create_notice(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"title": "{notice_in.notice_title}"}}',
         status=1, duration=duration,
     )
@@ -254,7 +255,7 @@ async def update_notice(
     notice = result.scalar_one_or_none()
     
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存在")
+        raise HTTPException(status_code=404, detail="公告不存�?)
     
     if notice_in.notice_title is not None:
         notice.title = notice_in.notice_title
@@ -272,7 +273,7 @@ async def update_notice(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"notice_id": {notice_id}}}',
         status=1, duration=duration,
     )
@@ -294,7 +295,7 @@ async def delete_notice(
     notice = result.scalar_one_or_none()
     
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存在")
+        raise HTTPException(status_code=404, detail="公告不存�?)
     
     await db.delete(notice)
     await db.commit()
@@ -302,7 +303,7 @@ async def delete_notice(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"notice_id": {notice_id}}}',
         status=1, duration=duration,
     )
@@ -318,14 +319,14 @@ async def change_notice_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(check_permissions("system:notice:edit"))
 ):
-    """修改公告状态"""
+    """修改公告状�?""
     start = time.time()
 
     result = await db.execute(select(Notice).where(Notice.id == notice_id))
     notice = result.scalar_one_or_none()
     
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存在")
+        raise HTTPException(status_code=404, detail="公告不存�?)
     
     notice.status = status
     await db.commit()
@@ -333,12 +334,12 @@ async def change_notice_status(
     duration = int((time.time() - start) * 1000)
     await OperLogService.create_log(
         db=db, user=current_user, method=request.method, url=str(request.url),
-        ip_address=request.client.host if request.client else None,
+        ip_address=get_client_ip(request),
         body_params=f'{{"notice_id": {notice_id}, "status": {status}}}',
         status=1, duration=duration,
     )
     
-    return {"code": 200, "message": "状态修改成功"}
+    return {"code": 200, "message": "状态修改成�?}
 
 
 @router.post("/notice/{notice_id}/read", response_model=ResponseModel)
@@ -347,11 +348,11 @@ async def mark_notice_read(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """标记公告为已读"""
+    """标记公告为已�?""
     result = await db.execute(select(Notice).where(Notice.id == notice_id))
     notice = result.scalar_one_or_none()
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存在")
+        raise HTTPException(status_code=404, detail="公告不存�?)
     
     existing = await db.execute(
         select(NoticeRead).where(
@@ -385,7 +386,7 @@ async def get_notice_read_records(
     result = await db.execute(select(Notice).where(Notice.id == notice_id))
     notice = result.scalar_one_or_none()
     if not notice:
-        raise HTTPException(status_code=404, detail="公告不存在")
+        raise HTTPException(status_code=404, detail="公告不存�?)
     
     count_result = await db.execute(
         select(func.count()).select_from(NoticeRead).where(NoticeRead.notice_id == notice_id)
