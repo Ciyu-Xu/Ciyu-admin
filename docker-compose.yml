@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  db:
+    image: postgres:15-alpine
+    container_name: admin-db
+    environment:
+      POSTGRES_DB: admin_system
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - admin-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: admin-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - admin-network
+
+  # 后端服务
+  backend:
+    build: ./backend
+    container_name: admin-backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/admin_system
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-change-in-production
+      - DEBUG=false
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - admin-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # 前端服务
+  frontend:
+    build: ./frontend
+    container_name: admin-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - admin-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  admin-network:
+    driver: bridge
