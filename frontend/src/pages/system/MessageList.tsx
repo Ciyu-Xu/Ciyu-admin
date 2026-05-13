@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Bell, 
   CheckCircle2, 
@@ -15,10 +15,9 @@ import {
   X,
   Send,
   Inbox,
-  ArrowUpFromLine
 } from 'lucide-react'
-import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
+const ReactQuill = React.lazy(() => import('react-quill'))
 import { 
   getMessageList, 
   markAsRead, 
@@ -572,14 +571,16 @@ const MessageList = () => {
                     消息内容 <span className="text-red-500">*</span>
                   </label>
                   <div className="h-64 mb-12">
-                    <ReactQuill
-                      theme="snow"
-                      value={sendForm.content}
-                      onChange={(content) => setSendForm(prev => ({ ...prev, content }))}
-                      modules={quillModules}
-                      formats={quillFormats}
-                      className="h-full"
-                    />
+                    <React.Suspense fallback={<div className="h-48 bg-gray-100 rounded flex items-center justify-center text-gray-400">加载编辑器...</div>}>
+                      <ReactQuill
+                        theme="snow"
+                        value={sendForm.content}
+                        onChange={(content) => setSendForm(prev => ({ ...prev, content }))}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        className="h-full"
+                      />
+                    </React.Suspense>
                   </div>
                 </div>
               </div>

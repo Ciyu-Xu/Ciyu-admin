@@ -1,8 +1,9 @@
 import { useTabStore } from '@/stores/tabs'
-import type { ComponentType } from 'react'
+import { Suspense, type ComponentType, type LazyExoticComponent } from 'react'
+import Loading from '@/components/Loading'
 
 interface KeepAliveProps {
-  pages: Record<string, ComponentType>
+  pages: Record<string, ComponentType | LazyExoticComponent<ComponentType>>
 }
 
 const KeepAlive = ({ pages }: KeepAliveProps) => {
@@ -20,7 +21,9 @@ const KeepAlive = ({ pages }: KeepAliveProps) => {
             className="h-full"
             style={{ display: tab.path === activeTab ? 'block' : 'none' }}
           >
-            <Component />
+            <Suspense fallback={<Loading />}>
+              <Component />
+            </Suspense>
           </div>
         )
       })}

@@ -1,51 +1,49 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import type { Menu } from '@/types'
 
-// 布局组件
 import MainLayout from '@/layouts/MainLayout'
+import Loading from '@/components/Loading'
 
-// 页面组件
-import Login from '@/pages/Login'
-import Register from '@/pages/Register'
-import Dashboard from '@/pages/Dashboard'
-import NotFound from '@/pages/NotFound'
+const Login = lazy(() => import('@/pages/Login'))
+const Register = lazy(() => import('@/pages/Register'))
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const NotFound = lazy(() => import('@/pages/NotFound'))
+const UserList = lazy(() => import('@/pages/system/UserList'))
+const RoleList = lazy(() => import('@/pages/system/RoleList'))
+const MenuList = lazy(() => import('@/pages/system/MenuList'))
+const DeptList = lazy(() => import('@/pages/system/DeptList'))
+const PostList = lazy(() => import('@/pages/system/PostList'))
+const NoticeList = lazy(() => import('@/pages/system/NoticeList'))
+const MessageList = lazy(() => import('@/pages/system/MessageList'))
+const DictManagement = lazy(() => import('@/pages/system/DictManagement'))
+const OperationLogList = lazy(() => import('@/pages/system/OperationLogList'))
+const LoginLogList = lazy(() => import('@/pages/system/LoginLogList'))
+const Profile = lazy(() => import('@/pages/system/Profile'))
+const SystemSettings = lazy(() => import('@/pages/system/SystemSettings'))
+const OnlineUser = lazy(() => import('@/pages/monitor/OnlineUser'))
+const SystemStatus = lazy(() => import('@/pages/monitor/SystemStatus'))
+const TaskList = lazy(() => import('@/pages/monitor/TaskList'))
+const TaskLogList = lazy(() => import('@/pages/monitor/TaskLogList'))
 
-// 系统管理页面
-import UserList from '@/pages/system/UserList'
-import RoleList from '@/pages/system/RoleList'
-import MenuList from '@/pages/system/MenuList'
-import DeptList from '@/pages/system/DeptList'
-import PostList from '@/pages/system/PostList'
-import NoticeList from '@/pages/system/NoticeList'
-import MessageList from '@/pages/system/MessageList'
-import DictManagement from '@/pages/system/DictManagement'
-import OperationLogList from '@/pages/system/OperationLogList'
-import LoginLogList from '@/pages/system/LoginLogList'
-import Profile from '@/pages/system/Profile'
-import SystemSettings from '@/pages/system/SystemSettings'
-
-// 监控页面
-import OnlineUser from '@/pages/monitor/OnlineUser'
-import SystemStatus from '@/pages/monitor/SystemStatus'
-import TaskList from '@/pages/monitor/TaskList'
-import TaskLogList from '@/pages/monitor/TaskLogList'
-
-// 路由守卫组件
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn)
-  
+
   if (!isLoggedIn) {
     return <Navigate to="/login" replace />
   }
-  
+
   return <>{children}</>
 }
 
-// 根据菜单生成路由配置
+const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<Loading />}>{children}</Suspense>
+)
+
 export const generateRoutesFromMenus = (menus: Menu[]) => {
   const routes: { path: string; component: React.ComponentType }[] = []
-  
+
   const traverseMenus = (menuList: Menu[]) => {
     menuList.forEach((menu) => {
       if (menu.path && menu.component) {
@@ -54,26 +52,33 @@ export const generateRoutesFromMenus = (menus: Menu[]) => {
           component: Dashboard,
         })
       }
-      
+
       if (menu.children && menu.children.length > 0) {
         traverseMenus(menu.children)
       }
     })
   }
-  
+
   traverseMenus(menus)
   return routes
 }
 
-// 基础路由配置
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <Login />,
+    element: (
+      <SuspenseWrapper>
+        <Login />
+      </SuspenseWrapper>
+    ),
   },
   {
     path: '/register',
-    element: <Register />,
+    element: (
+      <SuspenseWrapper>
+        <Register />
+      </SuspenseWrapper>
+    ),
   },
   {
     path: '/',
@@ -89,88 +94,42 @@ export const router = createBrowserRouter([
       },
       {
         path: 'dashboard',
-        element: <Dashboard />,
+        element: <SuspenseWrapper><Dashboard /></SuspenseWrapper>,
       },
       {
         path: 'profile',
-        element: <Profile />,
+        element: <SuspenseWrapper><Profile /></SuspenseWrapper>,
       },
       {
         path: 'system',
         children: [
-          {
-            path: 'user',
-            element: <UserList />,
-          },
-          {
-            path: 'role',
-            element: <RoleList />,
-          },
-          {
-            path: 'menu',
-            element: <MenuList />,
-          },
-          {
-            path: 'dept',
-            element: <DeptList />,
-          },
-          {
-            path: 'post',
-            element: <PostList />,
-          },
-          {
-            path: 'notice',
-            element: <NoticeList />,
-          },
-          {
-            path: 'message',
-            element: <MessageList />,
-          },
-          {
-            path: 'dict',
-            element: <DictManagement />,
-          },
-          {
-            path: 'settings',
-            element: <SystemSettings />,
-          },
-
+          { path: 'user', element: <SuspenseWrapper><UserList /></SuspenseWrapper> },
+          { path: 'role', element: <SuspenseWrapper><RoleList /></SuspenseWrapper> },
+          { path: 'menu', element: <SuspenseWrapper><MenuList /></SuspenseWrapper> },
+          { path: 'dept', element: <SuspenseWrapper><DeptList /></SuspenseWrapper> },
+          { path: 'post', element: <SuspenseWrapper><PostList /></SuspenseWrapper> },
+          { path: 'notice', element: <SuspenseWrapper><NoticeList /></SuspenseWrapper> },
+          { path: 'message', element: <SuspenseWrapper><MessageList /></SuspenseWrapper> },
+          { path: 'dict', element: <SuspenseWrapper><DictManagement /></SuspenseWrapper> },
+          { path: 'settings', element: <SuspenseWrapper><SystemSettings /></SuspenseWrapper> },
         ],
       },
       {
         path: 'monitor',
         children: [
-          {
-            path: 'online',
-            element: <OnlineUser />,
-          },
-          {
-            path: 'status',
-            element: <SystemStatus />,
-          },
-          {
-            path: 'task',
-            element: <TaskList />,
-          },
-          {
-            path: 'task-log',
-            element: <TaskLogList />,
-          },
-          {
-            path: 'operlog',
-            element: <OperationLogList />,
-          },
-          {
-            path: 'loginlog',
-            element: <LoginLogList />,
-          },
+          { path: 'online', element: <SuspenseWrapper><OnlineUser /></SuspenseWrapper> },
+          { path: 'status', element: <SuspenseWrapper><SystemStatus /></SuspenseWrapper> },
+          { path: 'task', element: <SuspenseWrapper><TaskList /></SuspenseWrapper> },
+          { path: 'task-log', element: <SuspenseWrapper><TaskLogList /></SuspenseWrapper> },
+          { path: 'operlog', element: <SuspenseWrapper><OperationLogList /></SuspenseWrapper> },
+          { path: 'loginlog', element: <SuspenseWrapper><LoginLogList /></SuspenseWrapper> },
         ],
       },
     ],
   },
   {
     path: '*',
-    element: <NotFound />,
+    element: <SuspenseWrapper><NotFound /></SuspenseWrapper>,
   },
 ])
 

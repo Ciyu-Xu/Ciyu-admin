@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy } from 'react'
 import { 
   Menu, 
   X, 
@@ -36,43 +36,24 @@ import ToastContainer from '@/components/Toast'
 import CommandPalette from '@/components/CommandPalette'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 
-// 页面组件
-import Dashboard from '@/pages/Dashboard'
-import Profile from '@/pages/system/Profile'
-import UserList from '@/pages/system/UserList'
-import RoleList from '@/pages/system/RoleList'
-import MenuList from '@/pages/system/MenuList'
-import DeptList from '@/pages/system/DeptList'
-import PostList from '@/pages/system/PostList'
-import NoticeList from '@/pages/system/NoticeList'
-import MessageList from '@/pages/system/MessageList'
-import DictManagement from '@/pages/system/DictManagement'
-import OperationLogList from '@/pages/system/OperationLogList'
-import LoginLogList from '@/pages/system/LoginLogList'
-import SystemSettings from '@/pages/system/SystemSettings'
-import OnlineUser from '@/pages/monitor/OnlineUser'
-import SystemStatus from '@/pages/monitor/SystemStatus'
-import TaskList from '@/pages/monitor/TaskList'
-import TaskLogList from '@/pages/monitor/TaskLogList'
-
-const pageComponents: Record<string, React.ComponentType> = {
-  '/dashboard': Dashboard,
-  '/profile': Profile,
-  '/system/user': UserList,
-  '/system/role': RoleList,
-  '/system/menu': MenuList,
-  '/system/dept': DeptList,
-  '/system/post': PostList,
-  '/system/notice': NoticeList,
-  '/system/message': MessageList,
-  '/system/dict': DictManagement,
-  '/system/settings': SystemSettings,
-  '/monitor/online': OnlineUser,
-  '/monitor/status': SystemStatus,
-  '/monitor/task': TaskList,
-  '/monitor/task-log': TaskLogList,
-  '/monitor/operlog': OperationLogList,
-  '/monitor/loginlog': LoginLogList,
+const pageComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
+  '/dashboard': lazy(() => import('@/pages/Dashboard')),
+  '/profile': lazy(() => import('@/pages/system/Profile')),
+  '/system/user': lazy(() => import('@/pages/system/UserList')),
+  '/system/role': lazy(() => import('@/pages/system/RoleList')),
+  '/system/menu': lazy(() => import('@/pages/system/MenuList')),
+  '/system/dept': lazy(() => import('@/pages/system/DeptList')),
+  '/system/post': lazy(() => import('@/pages/system/PostList')),
+  '/system/notice': lazy(() => import('@/pages/system/NoticeList')),
+  '/system/message': lazy(() => import('@/pages/system/MessageList')),
+  '/system/dict': lazy(() => import('@/pages/system/DictManagement')),
+  '/system/settings': lazy(() => import('@/pages/system/SystemSettings')),
+  '/monitor/online': lazy(() => import('@/pages/monitor/OnlineUser')),
+  '/monitor/status': lazy(() => import('@/pages/monitor/SystemStatus')),
+  '/monitor/task': lazy(() => import('@/pages/monitor/TaskList')),
+  '/monitor/task-log': lazy(() => import('@/pages/monitor/TaskLogList')),
+  '/monitor/operlog': lazy(() => import('@/pages/system/OperationLogList')),
+  '/monitor/loginlog': lazy(() => import('@/pages/system/LoginLogList')),
 }
 
 const pageTitles: Record<string, string> = {
